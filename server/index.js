@@ -12,12 +12,22 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const IS_PROD = process.env.NODE_ENV === 'production';
 
-// --- SECURITY: Configured CORS (not wide open) ---
+// --- SECURITY: Configured CORS ---
+const allowedOrigins = [
+  'http://localhost:5173',
+  process.env.CLIENT_ORIGIN,
+].filter(Boolean);
+
 app.use(cors({
-  origin: [
-    process.env.CLIENT_ORIGIN || 'http://localhost:5173',
-    'http://localhost:5173',
-  ],
+  origin: (origin, callback) => {
+    // Allow requests with no origin (e.g. mobile apps, curl)
+    if (!origin) return callback(null, true);
+    // Allow any vercel.app subdomain OR explicitly listed origins
+    if (origin.endsWith('.vercel.app') || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    callback(new Error(`CORS: Origin ${origin} not allowed`));
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
 }));
 
